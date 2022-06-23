@@ -1,10 +1,18 @@
 from fastapi import FastAPI
-
+import schemas
 app = FastAPI()
 
 
-@app.get("/")
-async def root():
+
+
+
+
+
+
+@app.put("/api/detector/initialized")
+async def initialized():
+    
+
     return {"message": "Hello World"}
 
 
