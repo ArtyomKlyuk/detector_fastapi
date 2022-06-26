@@ -1,3 +1,4 @@
+import json
 import os.path
 
 from fastapi import FastAPI
@@ -12,11 +13,16 @@ def check_file(path):
         pass
 
 
+# Сделать интерфейс для добавления данных в Json объект
 @app.put("/api/detector/initialized")
 async def initialized(detector: Detector):
     if os.path.isfile("Detector_state.json"):
-        with open('Detector_state.json') as file:
-            pass
+        with open('Detector_state.json', 'w') as file:
+            for i in range(3):
+                json.dump(detector)  # detector.(какое-либо поле)
+    else:
+        pass
+    #     Создать JSON объект с состоянием "новый"
 
     return {"message": "Hello World"}
 
