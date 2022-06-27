@@ -13,28 +13,38 @@ class Point(BaseModel):
 
 
 class Zone(BaseModel):
-    location: dict[GpsCoord]
+    location: GpsCoord
     address: str
-    vrpDetectionArea: list[Point]
+    vrpDetectionArea: Point
 
 
 class ConformityCertificate(BaseModel):
     number: str
-    expirationDate: date
+    expirationDate: str
 
 
 class Detector(BaseModel):
-    state: list = ['NEW', "SetUP", "ACTIVE"]
+    # state: list = ['NEW', "SetUP", "ACTIVE"]
     serialNumber: str
     model: str
-    conformityCertificate: dict[ConformityCertificate]
+    conformityCertificate: ConformityCertificate | None = None
     address: str
-    location: dict[GpsCoord]
-    zone: dict[Zone]
+    location: GpsCoord
+    zone: Zone
 
-    class Config:
-        extra_shemas = {
-            "example":{
-                "serialNumber ":"1242144"
-            }
-        }
+    # class Config:
+    #     extra_shemas = {
+    #         "example": {
+    #             "serialNumber ": "1242144"
+    #         }
+    #     }
+
+
+class Detector_initialize(BaseModel):
+    # state: list = ['NEW', "SetUP", "ACTIVE"]
+    serialNumber: str
+    model: str
+    conformityCertificate: ConformityCertificate
+    # address: str
+    # location: dict[GpsCoord]
+    # zone: dict[Zone]

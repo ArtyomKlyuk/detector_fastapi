@@ -1,11 +1,11 @@
 # Test your FastAPI endpoints
 
-GET http://127.0.0.1:8000/
+POST http://127.0.0.1:8000/api/detector/initialized/"{"detector":{"model":"MyModel", "serialNumber":"231432432", "conformityCertificate":{"expirationDate":"12-12-2012", "number":"1233123"}}}"
 Accept: application/json
 
 ###
 
-GET http://127.0.0.1:8000/hello/User
-Accept: application/json
-
-###
+#GET http://127.0.0.1:8000/hello/User
+#Accept: application/json
+#
+####

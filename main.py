@@ -13,15 +13,24 @@ def check_file(path):
         pass
 
 
-# Сделать интерфейс для добавления данных в Json объект
-@app.put("/api/detector/initialized")
+# Выделить добавление в json файл в функцию и реализовать структурированное добавление Json (ключ, значения) и
+# сделать проверку состояния детектора в json file Сделать интерфейс для добавления данных в Json файл
+@app.post("/api/detector/initialized", status_code=201)
 async def initialized(detector: Detector):
+    state = ['NEW', "SetUP", "ACTIVE"]
     if os.path.isfile("Detector_state.json"):
-        with open('Detector_state.json', 'w') as file:
-            for i in range(3):
-                json.dump(detector)  # detector.(какое-либо поле)
+        with open('Detector_state.json', 'a') as file:
+            json.dump({'state': state[1]}, file)
+            json.dump(detector.serialNumber, file)  # detector.(какое-либо поле)
+            json.dump(detector.model, file)  # detector.(какое-либо поле)
+            json.dump(detector.conformityCertificate.number, file)  # detector.(какое-либо поле)
+            json.dump(detector.conformityCertificate.expirationDate, file)  # detector.(какое-либо поле)
     else:
-        pass
+        with open('Detector_state.json', 'w') as file:
+            json.dump({'state': state[0]}, file)
+            json.dump(detector.serialNumber, file)  # detector.(какое-либо поле)
+            json.dump(detector.model, file)  # detector.(какое-либо поле)
+            json.dump(detector.conformityCertificate, file)  # detector.(какое-либо поле)
     #     Создать JSON объект с состоянием "новый"
 
     return {"message": "Hello World"}
