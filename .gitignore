@@ -3,3 +3,5 @@ openapi (1).yaml
 Разработка web-сервиса_vPython.docx
 __pycache__/
 *.py[cod]
+test.py
+test_file.json
