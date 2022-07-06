@@ -31,7 +31,6 @@ class DetectorInitialize(BaseModel):
     conformityCertificate: ConformityCertificate | None = None
 
 
-
 class DetectorActive(BaseModel):
     address: str
     location: GpsCoord
@@ -47,7 +46,8 @@ class DetectorActive(BaseModel):
 
 class DetectorActiveStorage:
     def active_detector(self, filters: DetectorActive):
-        return [filters.zone, filters.address, filters.location]
+        active_fields = filters.zone, filters.address, filters.location
+        return active_fields
 
 
 class DetectorCheckActive:
@@ -57,6 +57,9 @@ class DetectorCheckActive:
     def active_check(self, filters: DetectorActive):
         zone_loc = self.repo.active_detector(filters)[0].location
         device_loc = self.repo.active_detector(filters)[2]
+        zone_loc = [zone_loc.latitude, zone_loc.longitude]
+        device_loc = [device_loc.latitude, device_loc.longitude]
+        print(zone_loc, device_loc)
         if haversine(zone_loc,
                      device_loc) > 0.3:  # Находится расстояние от координат зоны детекции до координат устройства
             return False
@@ -65,9 +68,8 @@ class DetectorCheckActive:
 
 class DetectorInitStorage:
     def initialize_detector(self, filters: DetectorInitialize):
-        active_fields = filters.serialNumber, filters.model, filters.conformityCertificate
-        return dict(serialNumber=filters.serialNumber, model=filters.model,
-                    conformityCertificate=filters.conformityCertificate)
+        init_fields = filters.serialNumber, filters.model, filters.conformityCertificate
+        return init_fields
 
 
 class DetectorCheckInit:
@@ -76,8 +78,6 @@ class DetectorCheckInit:
 
     def init_check(self, filters: DetectorInitialize):
         initialize_fields = self.repo.initialize_detector(filters)
-        none_fields = []
         for field in initialize_fields:
-            if field is None: none_fields.append(field)
-
-        return lambda: None not in initialize_fields
+            if field is None: return False
+        return True

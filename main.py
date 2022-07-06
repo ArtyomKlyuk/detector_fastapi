@@ -1,76 +1,59 @@
 import json
 import os.path
-
-from fastapi import FastAPI
+from write_methods import Writting
+from fastapi import FastAPI, HTTPException
 from fastapi.encoders import jsonable_encoder
-
-from schemas import DetectorInitialize, DetectorInitStorage
+from fastapi.responses import JSONResponse
+from settings import GetNameFile
+from schemas import DetectorInitialize, DetectorInitStorage, DetectorCheckInit, DetectorActive, DetectorCheckActive, \
+    DetectorActiveStorage
 
 app = FastAPI()
 
-
-def check_file(path):
-    # "Detector_state.json"
-    if os.path.isfile(path) == False:
-        pass
-
-
-def write_json():
-    state = ['NEW', "SetUP", "ACTIVE"]
-    if os.path.isfile("Detector_state.json"):
-        with open('Detector_state.json', 'a') as file:
-            json.dump({'state': state[1]}, file)
-            json.dump(detector.serialNumber, file)  # detector.(какое-либо поле)
-            json.dump(detector.model, file)  # detector.(какое-либо поле)
-            json.dump(detector.conformityCertificate.number, file)  # detector.(какое-либо поле)
-            json.dump(detector.conformityCertificate.expirationDate, file)  # detector.(какое-либо поле)
-    else:
-        with open('Detector_state.json', 'w') as file:
-            json.dump({'state': state[0]}, file)
-            json.dump(detector.serialNumber, file)  # detector.(какое-либо поле)
-            json.dump(detector.model, file)  # detector.(какое-либо поле)
-            json.dump(detector.conformityCertificate, file)  # detector.(какое-либо поле)
-    #     Создать JSON объект с состоянием "новый"
-
-
 # Выделить добавление в json файл в функцию и реализовать структурированное добавление Json (ключ, значения) и
+
 # сделать проверку состояния детектора в json file Сделать интерфейс для добавления данных в Json файл
 
+# Создать JSON объект с состоянием "новый"
+
+json_methods = Writting()
+name_of_file = GetNameFile().get_name()
 
 
-
-
-
-
-@app.post("/api/detector/initialized", status_code=201)
+@app.post("/api/detector/initialized", status_code=200)
 async def initialized(detector: DetectorInitialize):
-    # print(detector)
-    """ В файл записывается json, а сами поля не проверяются"""
     json_compatible_item_data = jsonable_encoder(detector)
-
-    # print(DetectorInitStora   ge().initialize_detector(json_compatible_item_data))
-    print(json_compatible_item_data)
-    with open('test_file.json', 'w') as file:
-        json.dump(json_compatible_item_data, file)
+    if DetectorCheckInit(DetectorInitStorage()).init_check(detector):
+        json_methods.write_json_init(json_compatible_item_data)
+    else:
+        raise HTTPException(status_code=418, detail="Поля не должны быть None")
     return detector
 
 
-@app.post("api/detecotr/active")
-async def reset():
-    """ Принять, проверить координаты, и дозаписать в Json"""
-    return
+"""Исправить проверку расстояния (формат аргументов для haversine)"""
 
 
-@app.delete("api/detector/setup")
+@app.post("/api/detector/active", status_code=200)
+async def active(detector: DetectorActive):
+    active_result = DetectorCheckActive(DetectorActiveStorage()).active_check(detector)
+    if active_result:
+        json_methods.write_json_active(active_result)
+    else:
+        raise HTTPException(status_code=400,
+                            detail="Расстояние между устройством и зоной обзора не должно превышать 300 метров.")
+    return detector
+
+
+@app.put("api/detector/setup", status_code=204)
 async def set_up():
-    return
+    json_methods.setup_detector()
 
 
-@app.put("api/detecotr/reset")
+@app.put("api/detecotr/reset", status_code=204)
 async def reset():
-    return
+    json_methods.reset_detector()
 
 
-@app.get("/api/detector")
+@app.get("/api/detector", status_code=200)
 async def detector_state():
-    return {"message": f"Hello {name}"}
+    return json_methods.get_state()

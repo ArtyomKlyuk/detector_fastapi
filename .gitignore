@@ -4,4 +4,4 @@ openapi (1).yaml
 __pycache__/
 *.py[cod]
 test.py
-test_file.json
+openapi.yaml
