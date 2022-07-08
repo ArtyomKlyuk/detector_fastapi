@@ -1,7 +1,6 @@
 .idea
-openapi (1).yaml
 Разработка web-сервиса_vPython.docx
 __pycache__/
 *.py[cod]
-test.py
 openapi.yaml
+Detector_state.json

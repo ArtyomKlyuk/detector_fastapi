@@ -1,6 +1,6 @@
 class GetNameOfDetectorFile:
     def __init__(self):
-        self.FILE_WITH_NAME = 'name_of_detector_file.txt'
+        self.FILE_WITH_NAME = r'D:\Codes\detector_fastapi\settings\name_of_detector_file.txt'
 
     def get_name(self):
         with open(self.FILE_WITH_NAME, 'r') as file:

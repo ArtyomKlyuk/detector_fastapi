@@ -1,59 +1,72 @@
-import json
-import os.path
-from write_methods import Writting
 from fastapi import FastAPI, HTTPException
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
-from settings import GetNameFile
-from schemas import DetectorInitialize, DetectorInitStorage, DetectorCheckInit, DetectorActive, DetectorCheckActive, \
-    DetectorActiveStorage
+
+from valitators.check_detector_file import GetResetCheck, GetStateCheck, GetSetUpCheck
+from valitators.entities_check import DetectorInitialize, DetectorActive, GetResultOfCheckActive, \
+    GetResultOfCheckInit
+from memory_methods.write_methods import JsonMethods
 
 app = FastAPI()
+json_methods = JsonMethods()
 
-# Выделить добавление в json файл в функцию и реализовать структурированное добавление Json (ключ, значения) и
 
-# сделать проверку состояния детектора в json file Сделать интерфейс для добавления данных в Json файл
-
-# Создать JSON объект с состоянием "новый"
-
-json_methods = Writting()
-name_of_file = GetNameFile().get_name()
+class Errors:
+    not_none_fields = HTTPException(status_code=418, detail="Поля не должны быть None")
+    query_is_not_correct = HTTPException(status_code=418, detail='Запрос не соответствует состоянию детектора')
+    distance_error = HTTPException(status_code=400,
+                                   detail="Расстояние между устройством и зоной обзора не должно превышать 300 метров.")
+    points_error = HTTPException(status_code=400, detail='Должно быть две точки в поле VrpDetection')
 
 
 @app.post("/api/detector/initialized", status_code=200)
 async def initialized(detector: DetectorInitialize):
-    json_compatible_item_data = jsonable_encoder(detector)
-    if DetectorCheckInit(DetectorInitStorage()).init_check(detector):
-        json_methods.write_json_init(json_compatible_item_data)
+    check_file, fields_check = GetResultOfCheckInit().get_check_init(detector)
+    if check_file:
+        json_compatible_item_data = jsonable_encoder(detector)
+        if fields_check:
+            json_methods.write_init(json_compatible_item_data)
+        else:
+            raise Errors.not_none_fields
+        return detector
     else:
-        raise HTTPException(status_code=418, detail="Поля не должны быть None")
-    return detector
-
-
-"""Исправить проверку расстояния (формат аргументов для haversine)"""
+        raise Errors.query_is_not_correct
 
 
 @app.post("/api/detector/active", status_code=200)
 async def active(detector: DetectorActive):
-    active_result = DetectorCheckActive(DetectorActiveStorage()).active_check(detector)
-    if active_result:
-        json_methods.write_json_active(active_result)
-    else:
-        raise HTTPException(status_code=400,
-                            detail="Расстояние между устройством и зоной обзора не должно превышать 300 метров.")
+    json_object = jsonable_encoder(detector)
+    active_result, check_file_result = GetResultOfCheckActive().get_check_active(detector)
+    if active_result and check_file_result:
+        json_methods.write_active(json_object)
+    elif not check_file_result:
+        raise Errors.query_is_not_correct
+    elif active_result == False:
+        raise Errors.distance_error
+    elif active_result is None:
+        raise Errors.points_error
     return detector
 
 
-@app.put("api/detector/setup", status_code=204)
+@app.patch("/api/detector/setup", status_code=200)
 async def set_up():
-    json_methods.setup_detector()
+    if GetSetUpCheck().get_setup():
+        json_methods.setup_detector()
+        return
+    else:
+        raise Errors.query_is_not_correct
 
 
-@app.put("api/detecotr/reset", status_code=204)
+@app.patch("/api/detector/reset", status_code=200)
 async def reset():
-    json_methods.reset_detector()
+    if GetResetCheck().get_reset():
+        json_methods.reset_detector()
+    else:
+        raise Errors.query_is_not_correct
 
 
 @app.get("/api/detector", status_code=200)
 async def detector_state():
-    return json_methods.get_state()
+    return GetStateCheck().get_state()
+
+
+0
