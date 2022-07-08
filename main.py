@@ -1,41 +1,72 @@
-import json
-import os.path
+from fastapi import FastAPI, HTTPException
+from fastapi.encoders import jsonable_encoder
 
-from fastapi import FastAPI
-from schemas import Detector
+from valitators.check_detector_file import GetResetCheck, GetStateCheck, GetSetUpCheck
+from valitators.entities_check import DetectorInitialize, DetectorActive, GetResultOfCheckActive, \
+    GetResultOfCheckInit
+from memory_methods.write_methods import JsonMethods
 
 app = FastAPI()
+json_methods = JsonMethods()
 
 
-def check_file(path):
-    # "Detector_state.json"
-    if os.path.isfile(path) == False:
-        pass
+class Errors:
+    not_none_fields = HTTPException(status_code=418, detail="Поля не должны быть None")
+    query_is_not_correct = HTTPException(status_code=418, detail='Запрос не соответствует состоянию детектора')
+    distance_error = HTTPException(status_code=400,
+                                   detail="Расстояние между устройством и зоной обзора не должно превышать 300 метров.")
+    points_error = HTTPException(status_code=400, detail='Должно быть две точки в поле VrpDetection')
 
 
-# Выделить добавление в json файл в функцию и реализовать структурированное добавление Json (ключ, значения) и
-# сделать проверку состояния детектора в json file Сделать интерфейс для добавления данных в Json файл
-@app.post("/api/detector/initialized", status_code=201)
-async def initialized(detector: Detector):
-    state = ['NEW', "SetUP", "ACTIVE"]
-    if os.path.isfile("Detector_state.json"):
-        with open('Detector_state.json', 'a') as file:
-            json.dump({'state': state[1]}, file)
-            json.dump(detector.serialNumber, file)  # detector.(какое-либо поле)
-            json.dump(detector.model, file)  # detector.(какое-либо поле)
-            json.dump(detector.conformityCertificate.number, file)  # detector.(какое-либо поле)
-            json.dump(detector.conformityCertificate.expirationDate, file)  # detector.(какое-либо поле)
+@app.post("/api/detector/initialized", status_code=200)
+async def initialized(detector: DetectorInitialize):
+    check_file, fields_check = GetResultOfCheckInit().get_check_init(detector)
+    if check_file:
+        json_compatible_item_data = jsonable_encoder(detector)
+        if fields_check:
+            json_methods.write_init(json_compatible_item_data)
+        else:
+            raise Errors.not_none_fields
+        return detector
     else:
-        with open('Detector_state.json', 'w') as file:
-            json.dump({'state': state[0]}, file)
-            json.dump(detector.serialNumber, file)  # detector.(какое-либо поле)
-            json.dump(detector.model, file)  # detector.(какое-либо поле)
-            json.dump(detector.conformityCertificate, file)  # detector.(какое-либо поле)
-    #     Создать JSON объект с состоянием "новый"
-
-    return {"message": "Hello World"}
+        raise Errors.query_is_not_correct
 
 
-@app.get("/hello/{name}")
-async def say_hello(name: str):
-    return {"message": f"Hello {name}"}
+@app.post("/api/detector/active", status_code=200)
+async def active(detector: DetectorActive):
+    json_object = jsonable_encoder(detector)
+    active_result, check_file_result = GetResultOfCheckActive().get_check_active(detector)
+    if active_result and check_file_result:
+        json_methods.write_active(json_object)
+    elif not check_file_result:
+        raise Errors.query_is_not_correct
+    elif active_result == False:
+        raise Errors.distance_error
+    elif active_result is None:
+        raise Errors.points_error
+    return detector
+
+
+@app.patch("/api/detector/setup", status_code=200)
+async def set_up():
+    if GetSetUpCheck().get_setup():
+        json_methods.setup_detector()
+        return
+    else:
+        raise Errors.query_is_not_correct
+
+
+@app.patch("/api/detector/reset", status_code=200)
+async def reset():
+    if GetResetCheck().get_reset():
+        json_methods.reset_detector()
+    else:
+        raise Errors.query_is_not_correct
+
+
+@app.get("/api/detector", status_code=200)
+async def detector_state():
+    return GetStateCheck().get_state()
+
+
+0

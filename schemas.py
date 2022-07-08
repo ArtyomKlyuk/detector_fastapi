@@ -1,50 +1,45 @@
-from pydantic import BaseModel
 from datetime import date
+from enum import Enum
+from typing import List
+from fastapi import Query
+from pydantic import BaseModel, Required
+
+
+class State(BaseModel):
+    new = 'NEW'
+    setUp = 'SetUp'
+    active = 'ACTIVE'
 
 
 class GpsCoord(BaseModel):
-    latitude: float
-    longitude: float
+    latitude: float = Query(default=Required, ge=-90, le=90)
+    longitude: float = Query(default=Required, ge=-180, le=180)
 
 
 class Point(BaseModel):
-    x: int
-    y: int
+    x: int | None = Query(ge=0, le=3840)
+    y: int | None = Query(ge=0, le=2160)
 
 
 class Zone(BaseModel):
-    location: GpsCoord
-    address: str
-    vrpDetectionArea: Point
+    location: GpsCoord = Query(default=Required)
+    address: str | None = Query(default=None, min_length=1, max_length=512)
+    vrpDetectionArea: List[Point]
 
 
 class ConformityCertificate(BaseModel):
-    number: str
-    expirationDate: str
+    """Свидетельство средства измерения"""
+    number: str | None = Query(default=None, max_length=50)
+    expirationDate: date | None = None
 
 
-class Detector(BaseModel):
-    # state: list = ['NEW', "SetUP", "ACTIVE"]
-    serialNumber: str
-    model: str
+class DetectorInitialize(BaseModel):
+    serialNumber: str | None = Query(default=None, min_length=6, max_length=50, regex='^[a-zA-Z0-9-]*$')
+    model: str | None = Query(default=None, min_length=1, max_length=50)
     conformityCertificate: ConformityCertificate | None = None
-    address: str
-    location: GpsCoord
+
+
+class DetectorActive(BaseModel):
+    address: str | None = None
+    location: GpsCoord = Query(default=Required)
     zone: Zone
-
-    # class Config:
-    #     extra_shemas = {
-    #         "example": {
-    #             "serialNumber ": "1242144"
-    #         }
-    #     }
-
-
-class Detector_initialize(BaseModel):
-    # state: list = ['NEW', "SetUP", "ACTIVE"]
-    serialNumber: str
-    model: str
-    conformityCertificate: ConformityCertificate
-    # address: str
-    # location: dict[GpsCoord]
-    # zone: dict[Zone]
