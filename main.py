@@ -67,6 +67,3 @@ async def reset():
 @app.get("/api/detector", status_code=200)
 async def detector_state():
     return GetStateCheck().get_state()
-
-
-0
